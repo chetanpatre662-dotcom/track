@@ -1,0 +1,89 @@
+rules_version = '2';
+
+// FitTrack AI Firestore Security Rules.
+//
+// Core principles:
+//  - Private user data lives under users/{uid}/... and is accessible only to
+//    the authenticated owner (request.auth.uid == uid).
+//  - Public reference data (exercises, foods, categories, muscle groups) is
+//    world-readable to any authenticated user but never client-writable;
+//    it is seeded/administered exclusively via the backend Admin SDK, which
+//    bypasses these rules.
+//  - appConfig is read-only to clients.
+//  - Everything not explicitly allowed is denied.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // --- Private per-user data ---
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      // A user may create/update only their own top-level doc. UID in the
+      // document must match the authenticated user if present.
+      allow create, update: if isOwner(uid)
+        && (!('uid' in request.resource.data) || request.resource.data.uid == uid);
+      allow delete: if isOwner(uid);
+
+      // All subcollections (profile, routines, workouts, foodLogs, waterLogs,
+      // bodyMeasurements, personalRecords, aiConversations, etc.) inherit
+      // owner-only access, at any nesting depth.
+      match /{document=**} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // --- Public reference data (read-only to clients) ---
+    match /exercises/{exerciseId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /foods/{foodId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /exerciseCategories/{categoryId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+    match /muscleGroups/{muscleGroupId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // --- App configuration (read-only) ---
+    match /appConfig/{configId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // --- Trainer relationship data (backend Admin SDK only) ---
+    // trainers, referralCodes and trainerLinks are written and read ONLY via
+    // the backend Admin SDK (which bypasses these rules). Clients must never
+    // read or write them: a trainer reaches students only through the
+    // authorized /api/trainer/* endpoints, and a student never sees another
+    // student's link. These explicit deny matches are self-documenting guards;
+    // they are redundant with the trailing default-deny below but make the
+    // intent unmistakable (design-review NIT 1).
+    match /trainers/{trainerId} {
+      allow read, write: if false;
+    }
+    match /referralCodes/{code} {
+      allow read, write: if false;
+    }
+    match /trainerLinks/{studentUid} {
+      allow read, write: if false;
+    }
+
+    // --- Default deny ---
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

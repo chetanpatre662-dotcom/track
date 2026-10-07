@@ -1,0 +1,47 @@
+# ===== Secrets (NEVER commit) =====
+**/.env
+**/.env.local
+**/.env.*.local
+**/serviceAccountKey.json
+**/service-account*.json
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase_options.dart
+
+# ===== Node / Backend =====
+backend/node_modules/
+backend/dist/
+backend/coverage/
+backend/*.log
+npm-debug.log*
+yarn-error.log*
+
+# ===== Flutter / Dart =====
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/build/
+frontend/.pub-cache/
+frontend/.pub/
+frontend/**/*.g.dart.bak
+frontend/ios/Pods/
+frontend/android/.gradle/
+frontend/android/local.properties
+frontend/android/key.properties
+frontend/android/app/upload-keystore.jks
+frontend/android/**/GeneratedPluginRegistrant.*
+frontend/.idea/
+
+# ===== OS / Editor =====
+.DS_Store
+Thumbs.db
+*.iml
+.vscode/
+*.swp
+
+# ===== Firebase =====
+firebase/.firebase/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
